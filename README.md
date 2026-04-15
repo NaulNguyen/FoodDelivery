@@ -73,6 +73,13 @@ A scalable, robust backend API for a Food Delivery platform built with **.NET 10
    dotnet run
    ```
 
+5. **Run with Docker:**
+   You can also build and run the application using Docker:
+   ```bash
+   docker build -t fooddelivery-api .
+   docker run -d -p 8080:8080 --name fooddelivery fooddelivery-api
+   ```
+
 The API will now be running on either `https://localhost:xxxx` or `http://localhost:xxxx`. You can access the Swagger UI at `/swagger` for endpoint documentation.
 
 ## Role Responsibilities 👥
