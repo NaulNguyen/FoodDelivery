@@ -91,8 +91,8 @@ The API will now be running on either `https://localhost:xxxx` or `http://localh
 
 ## Roadmap & Enhancements 🛤️
 
-- [ ] Integrate FluentValidation for clean DTO property validation.
+- [x] Integrate FluentValidation for clean DTO property validation.
 - [ ] Add real-time notifications for order status changes via SignalR.
-- [ ] Implement caching (Redis) for frequently fetched menus.
+- [x] Implement caching (Redis) for frequently fetched menus.
 - [ ] Add Unit & Integration tests for Core layers.
 

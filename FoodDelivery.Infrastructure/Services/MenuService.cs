@@ -5,6 +5,8 @@ using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Domain.Entities;
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace FoodDelivery.Infrastructure.Services;
 
@@ -12,20 +14,41 @@ public class MenuService : IMenuService
 {
     private readonly FoodDeliveryDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IDistributedCache _cache;
 
-    public MenuService(FoodDeliveryDbContext context, IMapper mapper)
+    public MenuService(FoodDeliveryDbContext context, IMapper mapper, IDistributedCache cache)
     {
         _context = context;
         _mapper = mapper;
+        _cache = cache;
     }
 
     public async Task<Result<List<MenuItemResponse>>> GetMenuItemsAsync(Guid restaurantId, CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"Menu_{restaurantId}";
+        var cachedMenu = await _cache.GetStringAsync(cacheKey, cancellationToken);
+
+        if (!string.IsNullOrEmpty(cachedMenu))
+        {
+            var menuResponse = JsonSerializer.Deserialize<List<MenuItemResponse>>(cachedMenu);
+            if (menuResponse != null)
+            {
+                return Result<List<MenuItemResponse>>.Success(menuResponse);
+            }
+        }
+
         var items = await _context.MenuItems
             .Where(m => m.RestaurantId == restaurantId)
             .ToListAsync(cancellationToken);
 
-        return Result<List<MenuItemResponse>>.Success(_mapper.Map<List<MenuItemResponse>>(items));
+        var mappedItems = _mapper.Map<List<MenuItemResponse>>(items);
+
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(mappedItems), new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+        }, cancellationToken);
+
+        return Result<List<MenuItemResponse>>.Success(mappedItems);
     }
 
     public async Task<Result<MenuItemResponse>> CreateMenuItemAsync(Guid ownerId, CreateMenuItemRequest request, CancellationToken cancellationToken = default)
@@ -41,6 +64,8 @@ public class MenuService : IMenuService
 
         _context.MenuItems.Add(menuItem);
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _cache.RemoveAsync($"Menu_{restaurant.Id}", cancellationToken);
 
         return Result<MenuItemResponse>.Success(_mapper.Map<MenuItemResponse>(menuItem));
     }
@@ -62,6 +87,8 @@ public class MenuService : IMenuService
         _context.MenuItems.Update(menuItem);
         await _context.SaveChangesAsync(cancellationToken);
 
+        await _cache.RemoveAsync($"Menu_{menuItem.RestaurantId}", cancellationToken);
+
         return Result<MenuItemResponse>.Success(_mapper.Map<MenuItemResponse>(menuItem));
     }
 
@@ -80,6 +107,8 @@ public class MenuService : IMenuService
         menuItem.IsDeleted = true;
         _context.MenuItems.Update(menuItem);
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _cache.RemoveAsync($"Menu_{menuItem.RestaurantId}", cancellationToken);
 
         return Result.Success();
     }

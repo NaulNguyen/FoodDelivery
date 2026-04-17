@@ -19,6 +19,15 @@ public static class DependencyInjection
         services.AddDbContext<FoodDeliveryDbContext>(options =>
             options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 34))));
 
+        var redisConnectionString = configuration.GetConnectionString("Redis") 
+            ?? "localhost:6379";
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+            options.InstanceName = "FoodDelivery_";
+        });
+
         services.AddIdentity<User, IdentityRole<Guid>>(options =>
         {
             // Cấu hình mật khẩu

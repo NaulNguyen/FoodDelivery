@@ -3,6 +3,7 @@ using FoodDelivery.Application;
 using FoodDelivery.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,9 @@ builder.Services.AddProblemDetails();
 // Add services to the container.
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Add FluentValidation AutoValidation
+builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddAuthentication(options =>
 {
